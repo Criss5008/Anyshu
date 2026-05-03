@@ -146,13 +146,40 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .feat-badge::before { content:''; width:6px; height:6px; background:var(--gold); transform:rotate(45deg); }
 
 /* ══ GRID ══ */
-.gallery-wrap { padding: 52px 48px 80px; }
+.gallery-wrap {
+  padding: 52px 48px 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Stars inside gallery-wrap ── */
+.g-star {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: white;
+  animation: starTwinkle var(--dur, 3s) ease-in-out var(--delay, 0s) infinite alternate;
+}
+@keyframes starTwinkle {
+  0%   { opacity: var(--a-min, 0.08); transform: scale(0.7); }
+  100% { opacity: var(--a-max, 0.55); transform: scale(1.15); }
+}
+
+/* shooting star inside gallery */
+.g-shooter {
+  position: absolute;
+  pointer-events: none;
+  height: 1.5px;
+  border-radius: 999px;
+  opacity: 0;
+}
+
 .section-label {
   font-size: 0.55rem; letter-spacing: 0.44em; text-transform: uppercase; color: var(--muted);
   margin-bottom: 36px; display: flex; align-items: center; gap: 16px;
 }
 .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
-#grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 32px; }
+#grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 32px; position: relative; z-index: 1; }
 
 .frame-card { position: relative; cursor: pointer; animation: fadeUp 0.5s ease both; }
 .frame-card .tilt-container { perspective: 700px; width:100%; }
@@ -202,8 +229,8 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   cursor: zoom-in;
   max-height: calc(88vh - 28px);
 }
-.lb-viewport.zoomed   { cursor: grab; }
-.lb-viewport.grabbing { cursor: grabbing; }
+.lb-viewport.zoomed   { cursor: zoom-in; }
+.lb-viewport.grabbing { cursor: zoom-in; }
 
 #lb-img {
   display: block;
@@ -220,19 +247,170 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   position: absolute; z-index: 20; pointer-events: none;
   width: 24px; height: 24px;
   border-color: var(--gold2); border-style: solid; opacity: 0.85;
+  transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
 }
-.lb-corner.tl { top:20px;    left:20px;             border-width:2px 0 0 2px; }
-.lb-corner.tr { top:20px;    right:20px;            border-width:2px 2px 0 0; }
-.lb-corner.bl { bottom:20px; left:20px;             border-width:0 0 2px 2px; }
-.lb-corner.br { bottom:20px; right:20px;            border-width:0 2px 2px 0; }
+.lb-corner.tl { top:20px;    left:20px;   border-width:2px 0 0 2px; }
+.lb-corner.tr { top:20px;    right:20px;  border-width:2px 2px 0 0; }
+.lb-corner.bl { bottom:20px; left:20px;   border-width:0 0 2px 2px; }
+.lb-corner.br { bottom:20px; right:20px;  border-width:0 2px 2px 0; }
 
+/* ── Traveling light along lb-frame edges ── */
+/* We use 4 pseudo-thin lines that travel around the frame */
+.lb-frame::before, .lb-frame::after,
+.lb-edge-b, .lb-edge-l {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 25;
+  background: linear-gradient(90deg, transparent, var(--gold2), transparent);
+  opacity: 0;
+}
+/* top edge — travels left→right */
+.lb-frame::before {
+  top: 0; left: -100%; width: 60%; height: 2px;
+  animation: edgeTop 3.2s cubic-bezier(0.4,0,0.6,1) infinite 0s;
+}
+/* right edge — travels top→bottom */
+.lb-frame::after {
+  top: -100%; right: 0; width: 2px; height: 60%;
+  background: linear-gradient(180deg, transparent, var(--gold2), transparent);
+  animation: edgeRight 3.2s cubic-bezier(0.4,0,0.6,1) infinite 0.8s;
+}
+/* bottom edge — travels right→left */
+.lb-edge-b {
+  bottom: 0; right: -100%; width: 60%; height: 2px;
+  animation: edgeBottom 3.2s cubic-bezier(0.4,0,0.6,1) infinite 1.6s;
+}
+/* left edge — travels bottom→top */
+.lb-edge-l {
+  bottom: -100%; left: 0; width: 2px; height: 60%;
+  background: linear-gradient(180deg, transparent, var(--gold2), transparent);
+  animation: edgeLeft 3.2s cubic-bezier(0.4,0,0.6,1) infinite 2.4s;
+}
+
+@keyframes edgeTop {
+  0%   { left: -60%; opacity: 0; }
+  8%   { opacity: 0.9; }
+  92%  { opacity: 0.9; }
+  100% { left: 100%;  opacity: 0; }
+}
+@keyframes edgeRight {
+  0%   { top: -60%; opacity: 0; }
+  8%   { opacity: 0.9; }
+  92%  { opacity: 0.9; }
+  100% { top: 100%;  opacity: 0; }
+}
+@keyframes edgeBottom {
+  0%   { right: -60%; opacity: 0; }
+  8%   { opacity: 0.9; }
+  92%  { opacity: 0.9; }
+  100% { right: 100%; opacity: 0; }
+}
+@keyframes edgeLeft {
+  0%   { bottom: -60%; opacity: 0; }
+  8%   { opacity: 0.9; }
+  92%  { opacity: 0.9; }
+  100% { bottom: 100%; opacity: 0; }
+}
+
+/* Bounce animation when lightbox opens */
+@keyframes cornerBounceIn {
+  0%   { width:0px; height:0px; opacity:0; }
+  55%  { width:36px; height:36px; opacity:1; }
+  72%  { width:18px; height:18px; opacity:0.7; }
+  85%  { width:30px; height:30px; opacity:0.95; }
+  93%  { width:22px; height:22px; opacity:0.8; }
+  100% { width:24px; height:24px; opacity:0.85; }
+}
 @keyframes cornerShoot {
   0%   { width:24px; height:24px; opacity:0.85; }
   35%  { width:46px; height:46px; opacity:1; }
   65%  { width:18px; height:18px; opacity:0.6; }
   100% { width:24px; height:24px; opacity:0.85; }
 }
-.lb-corner.animate { animation: cornerShoot 0.5s cubic-bezier(0.22,0.61,0.36,1) both; }
+@keyframes cornerFullscreen {
+  0%   { width:24px; height:24px; opacity:0.85; }
+  40%  { width:80px; height:80px; opacity:1; }
+  100% { width:24px; height:24px; opacity:0.85; }
+}
+.lb-corner.bounce-in       { animation: cornerBounceIn 0.65s cubic-bezier(0.22,0.61,0.36,1) both; }
+.lb-corner.animate          { animation: cornerShoot 0.5s cubic-bezier(0.22,0.61,0.36,1) both; }
+.lb-corner.fullscreen-burst { animation: cornerFullscreen 0.5s cubic-bezier(0.22,0.61,0.36,1) both; }
+
+/* ── Fullscreen close animation ── */
+@keyframes fsClose {
+  0%   { opacity: 1; clip-path: circle(100% at 50% 50%); }
+  60%  { opacity: 0.6; clip-path: circle(12% at 50% 50%); }
+  85%  { opacity: 0.15; clip-path: circle(2% at 50% 50%); }
+  100% { opacity: 0; clip-path: circle(0% at 50% 50%); }
+}
+@keyframes fsGoldRing {
+  0%   { opacity: 0; transform: scale(0.05); }
+  30%  { opacity: 0.6; }
+  70%  { opacity: 0.2; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+#lb-fullscreen.closing {
+  animation: fsClose 0.52s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+#lb-fullscreen.closing::after {
+  content: '';
+  position: fixed; inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  margin: auto;
+  width: 60px; height: 60px;
+  animation: fsGoldRing 0.52s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ── Frame explosion pre-animation ── */
+@keyframes frameExplode {
+  0%   { transform: scale(1.18); opacity: 1; }
+  60%  { transform: scale(2.8);  opacity: 0.4; }
+  100% { transform: scale(4);    opacity: 0; }
+}
+.lb-frame.exploding {
+  animation: frameExplode 0.42s cubic-bezier(0.2, 0, 0.4, 1) forwards;
+  pointer-events: none;
+}
+
+/* ── Fullscreen overlay ── */
+#lb-fullscreen {
+  display: none;
+  position: fixed; inset: 0; z-index: 400;
+  background: #000;
+  overflow: auto;
+  cursor: zoom-out;
+}
+#lb-fullscreen.open {
+  display: block;
+  animation: fsIn 0.38s cubic-bezier(0.22,0.61,0.36,1) both;
+}
+@keyframes fsIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+#lb-fullscreen .fs-hint {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding: 10px 20px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.5rem; letter-spacing: 0.32em; text-transform: uppercase;
+  color: rgba(201,168,76,0.7);
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+}
+#lb-fullscreen img {
+  display: block;
+  width: auto; height: auto;
+  min-width: 100vw; min-height: 100vh;
+  max-width: none; max-height: none;
+  user-select: none;
+}
 
 /* holo + glare on lb-frame */
 .lb-holo {
@@ -829,6 +1007,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .book-nav-btn:hover { border-color:var(--gold); color:var(--gold); }
 .book-nav-btn:disabled { opacity:0.2; cursor:default; }
 .book-nav-num { font-size:0.5rem; letter-spacing:0.3em; color:#555; text-transform:uppercase; }
+
 </style>
 </head>
 <body>
@@ -1013,6 +1192,12 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   </div>
 </div>
 
+<!-- FULLSCREEN IMAGE OVERLAY -->
+<div id="lb-fullscreen" onclick="closeFullscreen()">
+  <div class="fs-hint">clic para cerrar · scroll para explorar</div>
+  <img id="lb-fs-img" src="" alt=""/>
+</div>
+
 <!-- LIGHTBOX -->
 <div id="lb">
   <button id="lb-close" onclick="closeLB()">✕</button>
@@ -1027,12 +1212,14 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       <div class="lb-corner tr" id="lc-tr"></div>
       <div class="lb-corner bl" id="lc-bl"></div>
       <div class="lb-corner br" id="lc-br"></div>
+      <div class="lb-edge-b"></div>
+      <div class="lb-edge-l"></div>
       <div class="lb-holo"  id="lb-holo"></div>
       <div class="lb-glare" id="lb-glare"></div>
     </div>
     <div class="lb-info">
       <div class="lb-num" id="lb-num"></div>
-      <div class="lb-zoom-hint" id="lb-zoom-hint">clic para zoom</div>
+      <div class="lb-zoom-hint" id="lb-zoom-hint">clic para pantalla completa</div>
       <div class="zoom-pips" id="zoom-pips"></div>
     </div>
   </div>
@@ -1205,181 +1392,105 @@ function initLBTilt() {
   });
 }
 
-/* ─── ZOOM + PAN ─── */
-const ZOOM_STEPS = [1, 2, 3.5, 5, 7];
+/* ─── CLICK → FULLSCREEN DIRECTO ─── */
+const ZOOM_STEPS = [1]; // kept for compat, no real zoom
 let zoomLevel = 0;
 let panX = 0, panY = 0;
 let isDragging = false, dragSX = 0, dragSY = 0, panSX = 0, panSY = 0;
+let lastCursorX = 0, lastCursorY = 0;
 
-// build pips
+// single pip for fullscreen indicator
 (function(){
   const wrap = document.getElementById('zoom-pips');
-  ZOOM_STEPS.forEach((_,i) => {
-    const d = document.createElement('div');
-    d.className = 'zoom-pip'; d.id = 'pip-'+i;
-    wrap.appendChild(d);
-  });
+  const d = document.createElement('div');
+  d.className = 'zoom-pip'; d.id = 'pip-0';
+  wrap.appendChild(d);
 })();
 
 function updatePips() {
-  ZOOM_STEPS.forEach((_,i) =>
-    document.getElementById('pip-'+i).classList.toggle('on', i < zoomLevel));
+  const pip = document.getElementById('pip-0');
+  if (pip) pip.classList.toggle('on', false);
+}
+function clampPan() {}
+function applyZoom(animated) {}
+const FRAME_SCALE = [1];
+function getFrameScale() { return 1; }
+function applyFrameScale(rx = 0, ry = 0) {
+  const frame = document.getElementById('lb-frame');
+  frame.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) scale(1)`;
+}
+function updateArrowVis() {
+  document.getElementById('lb-prev').style.visibility = 'visible';
+  document.getElementById('lb-next').style.visibility = 'visible';
+}
+function resetZoom() {
+  zoomLevel = 0; panX = 0; panY = 0; isDragging = false;
+  document.getElementById('lb-zoom-hint').textContent = 'clic para pantalla completa';
+  updatePips(); updateArrowVis(); applyFrameScale();
 }
 
-function clampPan() {
-  const img   = document.getElementById('lb-img');
-  const vp    = document.getElementById('lb-viewport');
-  const scale = ZOOM_STEPS[zoomLevel];
-  const maxX  = (img.offsetWidth  * (scale - 1)) / 2;
-  const maxY  = (img.offsetHeight * (scale - 1)) / 2;
-  panX = Math.min(maxX, Math.max(-maxX, panX));
-  panY = Math.min(maxY, Math.max(-maxY, panY));
-}
-
-function applyZoom(animated) {
-  const img   = document.getElementById('lb-img');
-  const vp    = document.getElementById('lb-viewport');
-  const scale = ZOOM_STEPS[zoomLevel];
-  img.style.transition = animated ? 'transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
-  img.style.transform  = `scale(${scale}) translate(${panX/scale}px,${panY/scale}px)`;
-  vp.classList.toggle('zoomed', zoomLevel > 0);
-  if (isDragging) vp.classList.add('grabbing');
-  else vp.classList.remove('grabbing');
-}
-
-function animateCorners() {
-  ['lc-tl','lc-tr','lc-bl','lc-br'].forEach(id => {
+function animateCorners(type) {
+  const cls = type === 'open' ? 'bounce-in' : type === 'fullscreen' ? 'fullscreen-burst' : 'animate';
+  ['lc-tl','lc-tr','lc-bl','lc-br'].forEach((id, idx) => {
     const el = document.getElementById(id);
-    el.classList.remove('animate');
+    el.classList.remove('bounce-in','animate','fullscreen-burst');
     void el.offsetWidth;
-    el.classList.add('animate');
+    el.style.animationDelay = (type === 'open') ? (idx * 0.07) + 's' : '0s';
+    el.classList.add(cls);
   });
 }
 
-// how much the frame grows per zoom level (gentle, so it doesn't overflow screen)
-const FRAME_SCALE = [1, 1.12, 1.22, 1.3, 1.36];
-
-function getFrameScale() { return FRAME_SCALE[zoomLevel] || 1; }
-
-function applyFrameScale(extraRotX = 0, extraRotY = 0) {
+function openFullscreen() {
+  const src   = document.getElementById('lb-img').src;
   const frame = document.getElementById('lb-frame');
-  const s = getFrameScale();
-  frame.style.transform = `rotateX(${extraRotX}deg) rotateY(${extraRotY}deg) scale(${s})`;
+
+  document.getElementById('lb-fs-img').src = src;
+
+  // 1) corner burst
+  animateCorners('fullscreen');
+
+  // 2) frame explodes outward
+  frame.classList.add('exploding');
+
+  // 3) after explosion, show fullscreen overlay
+  setTimeout(() => {
+    frame.classList.remove('exploding');
+    document.getElementById('lb-fullscreen').classList.add('open');
+    // scroll to center of image
+    const fs  = document.getElementById('lb-fullscreen');
+    const img = document.getElementById('lb-fs-img');
+    setTimeout(() => {
+      fs.scrollLeft = (img.scrollWidth  - fs.clientWidth)  / 2;
+      fs.scrollTop  = (img.scrollHeight - fs.clientHeight) / 2;
+    }, 50);
+  }, 420);
 }
 
-function cycleZoom() {
-  if (isDragging) return;
-  zoomLevel = (zoomLevel + 1) >= ZOOM_STEPS.length ? 0 : zoomLevel + 1;
-  panX = 0; panY = 0;
-  const hint = document.getElementById('lb-zoom-hint');
-  if (zoomLevel === 0)                          hint.textContent = 'clic para zoom';
-  else if (zoomLevel === ZOOM_STEPS.length - 1) hint.textContent = `${ZOOM_STEPS[zoomLevel]}× — un clic más → volver`;
-  else                                          hint.textContent = `${ZOOM_STEPS[zoomLevel]}× — arrastra para explorar`;
-  animateCorners();
-  applyZoom(true);
-  updatePips();
-  updateArrowVis();
-
-  // nudge tilt + scale on zoom click
-  const frame = document.getElementById('lb-frame');
-  const s = getFrameScale();
-  frame.style.transform = `rotateX(-2deg) rotateY(3deg) scale(${s})`;
-  setTimeout(() => applyFrameScale(), 350);
+function closeFullscreen() {
+  const fs = document.getElementById('lb-fullscreen');
+  fs.classList.add('closing');
+  setTimeout(() => {
+    fs.classList.remove('open', 'closing');
+    zoomLevel = 0;
+    updatePips();
+    updateArrowVis();
+  }, 520);
 }
 
-function resetZoom() {
-  zoomLevel = 0; panX = 0; panY = 0; isDragging = false;
-  document.getElementById('lb-zoom-hint').textContent = 'clic para zoom';
-  applyZoom(true);
-  updatePips();
-  updateArrowVis();
-  applyFrameScale();
-}
-
-function updateArrowVis() {
-  const v = zoomLevel > 0 ? 'hidden' : 'visible';
-  document.getElementById('lb-prev').style.visibility = v;
-  document.getElementById('lb-next').style.visibility = v;
-}
-
-// mouse click = zoom (only fires on non-touch devices)
+// click on image → fullscreen directly
 const vp = document.getElementById('lb-viewport');
 vp.addEventListener('click', e => {
-  if (e.pointerType === 'touch') return; // touch handled by touchend
-  cycleZoom();
+  if (e.pointerType === 'touch') return;
+  openFullscreen();
 });
-
-vp.addEventListener('mousedown', e => {
-  if (zoomLevel === 0) return;
-  e.preventDefault(); e.stopPropagation();
-  isDragging = true;
-  dragSX = e.clientX; dragSY = e.clientY;
-  panSX = panX;       panSY = panY;
-  vp.classList.add('grabbing');
-});
-window.addEventListener('mousemove', e => {
-  if (!isDragging) return;
-  panX = panSX + (e.clientX - dragSX);
-  panY = panSY + (e.clientY - dragSY);
-  clampPan();
-  applyZoom(false);
-});
-window.addEventListener('mouseup', () => {
-  if (!isDragging) return;
-  isDragging = false;
-  vp.classList.remove('grabbing');
-});
-
-// touch pan + tap zoom + swipe navigation
-let touchStartX = 0, touchStartY = 0, touchMoved = false;
-
-vp.addEventListener('touchstart', e => {
-  const t = e.touches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
-  touchMoved  = false;
-  if (zoomLevel === 0) return; // pan only when zoomed
-  isDragging = true;
-  dragSX = t.clientX; dragSY = t.clientY;
-  panSX = panX;       panSY = panY;
-}, { passive: true });
-
-window.addEventListener('touchmove', e => {
-  if (!e.touches.length) return;
-  const t = e.touches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-  if (Math.abs(dx) > 6 || Math.abs(dy) > 6) touchMoved = true;
-
-  if (!isDragging) return;
-  panX = panSX + (t.clientX - dragSX);
-  panY = panSY + (t.clientY - dragSY);
-  clampPan();
-  applyZoom(false);
-}, { passive: true });
-
-window.addEventListener('touchend', e => {
-  isDragging = false;
-
-  // tap = cycle zoom (no drag happened)
-  if (!touchMoved) {
-    // check if tap was inside the viewport
-    const vpEl = document.getElementById('lb-viewport');
-    const rect  = vpEl.getBoundingClientRect();
-    const cx    = e.changedTouches[0].clientX;
-    const cy    = e.changedTouches[0].clientY;
-    if (cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom) {
-      cycleZoom();
-    }
-    return;
-  }
-
-  // swipe left/right to navigate (only when not zoomed)
-  if (zoomLevel === 0) {
-    const swipeDx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(swipeDx) > 50) {
-      lbNav(swipeDx < 0 ? 1 : -1);
-    }
+vp.addEventListener('touchend', e => {
+  // simple tap → fullscreen
+  const vpEl = document.getElementById('lb-viewport');
+  const rect  = vpEl.getBoundingClientRect();
+  const cx    = e.changedTouches[0].clientX;
+  const cy    = e.changedTouches[0].clientY;
+  if (cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom) {
+    openFullscreen();
   }
 });
 
@@ -1387,6 +1498,8 @@ window.addEventListener('touchend', e => {
 function openLB(i) {
   lbIndex = i; resetZoom(); updateLB();
   document.getElementById('lb').classList.add('open');
+  // bounce-in corners on open
+  setTimeout(() => animateCorners('open'), 80);
 }
 function updateLB() {
   const p = photos[lbIndex];
@@ -1412,7 +1525,11 @@ document.addEventListener('keydown', e => {
   if (!document.getElementById('lb').classList.contains('open')) return;
   if (e.key==='ArrowLeft')  lbNav(-1);
   if (e.key==='ArrowRight') lbNav(+1);
-  if (e.key==='Escape')     { if (zoomLevel > 0) resetZoom(); else closeLB(); }
+  if (e.key==='Escape') {
+    if (document.getElementById('lb-fullscreen').classList.contains('open')) closeFullscreen();
+    else if (zoomLevel > 0) resetZoom();
+    else closeLB();
+  }
 });
 
 /* ─── TV + VIDEOS ─── */
@@ -1966,6 +2083,135 @@ document.addEventListener('keydown', e => {
 
 loadVideos();
 loadPhotos();
+
+/* ══ GALLERY STARS (solo en la sección de fotos) ══ */
+(function() {
+  const wrap = document.querySelector('.gallery-wrap');
+  if (!wrap) return;
+
+  const rand = (min, max) => min + Math.random() * (max - min);
+
+  // 160 static twinkling stars
+  for (let i = 0; i < 160; i++) {
+    const s = document.createElement('div');
+    s.className = 'g-star';
+    const size = rand(0.8, 3.5);
+    const hue  = Math.random() < 0.2 ? rand(35, 55) : rand(200, 250);
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${rand(0,100)}%;
+      top:${rand(0,100)}%;
+      --dur:${rand(1.8, 5.5)}s;
+      --delay:${rand(0, 5)}s;
+      --a-min:${rand(0.03, 0.12)};
+      --a-max:${rand(0.3, 0.85)};
+      background: hsl(${hue},${Math.random()<0.2?'60%':'15%'},92%);
+      box-shadow: 0 0 ${size*2.5}px hsl(${hue},40%,80%);
+    `;
+    wrap.appendChild(s);
+  }
+
+  // JS-driven shooting stars: angle, fade in/out, random respawn
+  const NUM_SHOOTERS = 5;
+  const shooterEls = [];
+
+  function randomShooterConfig() {
+    // angle between 20° and 60° downward
+    const angleDeg = rand(20, 60);
+    const angleRad = angleDeg * Math.PI / 180;
+    const speed    = rand(220, 420); // px total travel
+    const length   = rand(70, 160);
+    const gold     = Math.random() < 0.3;
+    // random start position inside wrap
+    const wW = wrap.offsetWidth  || 800;
+    const wH = wrap.offsetHeight || 600;
+    return {
+      x:        rand(0, wW * 0.75),
+      y:        rand(0, wH * 0.6),
+      dx:       Math.cos(angleRad) * speed,
+      dy:       Math.sin(angleRad) * speed,
+      length,
+      duration: rand(0.7, 1.3),   // seconds for travel
+      pause:    rand(3, 10),       // seconds before next appearance
+      gold,
+    };
+  }
+
+  for (let i = 0; i < NUM_SHOOTERS; i++) {
+    const el = document.createElement('div');
+    el.className = 'g-shooter';
+    wrap.appendChild(el);
+    shooterEls.push({ el, cfg: null, startTime: null, state: 'idle', timer: null });
+  }
+
+  function launchShooter(sh) {
+    const cfg = randomShooterConfig();
+    sh.cfg = cfg;
+    sh.state = 'flying';
+    sh.startTime = performance.now();
+
+    const angleDeg = Math.atan2(cfg.dy, cfg.dx) * 180 / Math.PI;
+    const gold = cfg.gold;
+
+    sh.el.style.cssText = `
+      position: absolute;
+      pointer-events: none;
+      width: ${cfg.length}px;
+      height: 1.5px;
+      border-radius: 999px;
+      left: ${cfg.x}px;
+      top:  ${cfg.y}px;
+      transform-origin: left center;
+      transform: rotate(${angleDeg}deg) translateX(0);
+      background: linear-gradient(90deg, transparent, ${gold ? 'rgba(232,203,122,0.85)' : 'rgba(200,220,255,0.85)'}, white);
+      opacity: 0;
+      transition: none;
+    `;
+
+    // animate via rAF
+    function frame(now) {
+      const t = (now - sh.startTime) / (cfg.duration * 1000); // 0→1
+      if (t >= 1) {
+        sh.el.style.opacity = '0';
+        sh.state = 'idle';
+        // respawn after pause
+        sh.timer = setTimeout(() => launchShooter(sh), cfg.pause * 1000);
+        return;
+      }
+      // ease-in-out
+      const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+      const tx = cfg.dx * eased;
+      const ty = cfg.dy * eased;
+      // fade: in 0→0.15, out 0.75→1
+      let alpha;
+      if (t < 0.15)      alpha = t / 0.15;
+      else if (t > 0.75) alpha = 1 - (t - 0.75) / 0.25;
+      else               alpha = 1;
+
+      sh.el.style.transform = `rotate(${angleDeg}deg) translateX(${tx}px)`;
+      // need to also apply Y since rotation handles it
+      sh.el.style.left = (cfg.x + tx * 0) + 'px'; // x handled by rotate+translateX
+      sh.el.style.left = cfg.x + 'px';
+      sh.el.style.top  = cfg.y + 'px';
+      sh.el.style.transform = `rotate(${angleDeg}deg) translate(${eased * cfg.dx / Math.cos(angleDeg * Math.PI/180) || 0}px, 0)`;
+
+      // simpler: just use absolute x/y movement directly
+      sh.el.style.transform = 'none';
+      sh.el.style.left = (cfg.x + cfg.dx * eased) + 'px';
+      sh.el.style.top  = (cfg.y + cfg.dy * eased) + 'px';
+      sh.el.style.transform = `rotate(${angleDeg}deg)`;
+      sh.el.style.opacity = alpha.toFixed(3);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // stagger initial launches
+  shooterEls.forEach((sh, i) => {
+    sh.timer = setTimeout(() => launchShooter(sh), rand(500, 6000) * (i + 1) / NUM_SHOOTERS);
+  });
+})();
 
 </script>
 </body>
