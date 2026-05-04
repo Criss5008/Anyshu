@@ -58,7 +58,6 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 }
 .topbar-logo { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.45rem; font-weight: 300; letter-spacing: 0.1em; color: var(--cream); }
 .topbar-logo span { color: var(--gold); }
-.photo-count { font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
 
 /* ══ FEATURED ══ */
 .featured-wrap { padding: 56px 48px 0; animation: fadeUp 0.6s ease both; }
@@ -377,12 +376,54 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   pointer-events: none;
 }
 
+/* ── Fullscreen page button ── */
+#fs-btn {
+  background: none;
+  border: 1px solid var(--gold);
+  color: var(--gold2);
+  cursor: pointer;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  animation: fsBtnPulse 2.4s ease-in-out infinite;
+  transition: transform 0.2s;
+}
+#fs-btn::before {
+  content: '';
+  position: absolute; inset: -4px;
+  border: 1px solid var(--gold);
+  opacity: 0;
+  animation: fsBtnRing 2.4s ease-in-out infinite;
+}
+#fs-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%);
+  animation: fsBtnGlow 2.4s ease-in-out infinite;
+}
+@keyframes fsBtnPulse {
+  0%, 100% { box-shadow: 0 0 0px rgba(201,168,76,0);   border-color: var(--gold); }
+  50%       { box-shadow: 0 0 12px rgba(201,168,76,0.5); border-color: var(--gold2); }
+}
+@keyframes fsBtnRing {
+  0%   { opacity: 0.6; transform: scale(1);    }
+  100% { opacity: 0;   transform: scale(1.6);  }
+}
+@keyframes fsBtnGlow {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 1;   }
+}
+#fs-btn:hover { transform: scale(1.12); }
+#fs-btn svg { width: 16px; height: 16px; position: relative; z-index: 1; }
+
 /* ── Fullscreen overlay ── */
 #lb-fullscreen {
   display: none;
   position: fixed; inset: 0; z-index: 400;
   background: #000;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   cursor: zoom-out;
 }
 #lb-fullscreen.open {
@@ -406,9 +447,8 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 }
 #lb-fullscreen img {
   display: block;
-  width: auto; height: auto;
-  min-width: 100vw; min-height: 100vh;
-  max-width: none; max-height: none;
+  width: 100vw;
+  height: auto;
   user-select: none;
 }
 
@@ -1026,7 +1066,16 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 <div id="gallery-page">
   <div class="topbar">
     <div class="topbar-logo">A<span>nyshu :3</span></div>
-    <span class="photo-count" id="photo-count"></span>
+    <button id="fs-btn" title="Pantalla completa" onclick="togglePageFullscreen()">
+      <svg id="fs-icon-enter" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+      <svg id="fs-icon-exit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+        <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
+      </svg>
+    </button>
   </div>
 
   <!-- FEATURED + TV en la misma fila -->
@@ -1267,8 +1316,6 @@ async function loadPhotos() {
 
 /* ─── RENDER ─── */
 function renderAll() {
-  document.getElementById('photo-count').textContent =
-    photos.length + (photos.length===1 ? ' foto' : ' fotos');
 
   if (!photos.length) {
     document.getElementById('grid').innerHTML =
@@ -1456,13 +1503,6 @@ function openFullscreen() {
   setTimeout(() => {
     frame.classList.remove('exploding');
     document.getElementById('lb-fullscreen').classList.add('open');
-    // scroll to center of image
-    const fs  = document.getElementById('lb-fullscreen');
-    const img = document.getElementById('lb-fs-img');
-    setTimeout(() => {
-      fs.scrollLeft = (img.scrollWidth  - fs.clientWidth)  / 2;
-      fs.scrollTop  = (img.scrollHeight - fs.clientHeight) / 2;
-    }, 50);
   }, 420);
 }
 
@@ -2079,6 +2119,29 @@ document.addEventListener('keydown', e => {
   if (!document.getElementById('book-overlay').classList.contains('open')) return;
   if (e.key === 'ArrowRight') bookTurn(1);
   if (e.key === 'ArrowLeft')  bookTurn(-1);
+});
+
+/* ── Page fullscreen button ── */
+function togglePageFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+    document.getElementById('fs-icon-enter').style.display = 'none';
+    document.getElementById('fs-icon-exit').style.display  = '';
+  } else {
+    document.exitFullscreen().catch(() => {});
+    document.getElementById('fs-icon-enter').style.display = '';
+    document.getElementById('fs-icon-exit').style.display  = 'none';
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  const enter = document.getElementById('fs-icon-enter');
+  const exit  = document.getElementById('fs-icon-exit');
+  if (!enter || !exit) return;
+  if (document.fullscreenElement) {
+    enter.style.display = 'none'; exit.style.display = '';
+  } else {
+    enter.style.display = '';    exit.style.display = 'none';
+  }
 });
 
 loadVideos();
